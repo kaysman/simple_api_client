@@ -3,6 +3,10 @@
 [![style: very good analysis][very_good_analysis_badge]][very_good_analysis_link]
 [![License: MIT][license_badge]][license_link]
 
+> I kept rewriting the same HTTP envelope plumbing for every Flutter app
+> I built, so I extracted it into a package. Open-sourcing it in case
+> someone else finds it useful.
+
 A small HTTP client built on top of `package:http` that unwraps a standard
 response envelope:
 
