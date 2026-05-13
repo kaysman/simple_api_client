@@ -19,6 +19,7 @@ class SimpleApiClient {
   SimpleApiClient({
     required String baseUrl,
     this.debug = false,
+    this.timeout = const Duration(seconds: 10),
     Map<String, String>? defaultHeaders,
     http.Client? httpClient,
   }) : _baseUrl = baseUrl,
@@ -32,6 +33,12 @@ class SimpleApiClient {
   final String _baseUrl;
   final http.Client _httpClient;
   final Map<String, String> _defaultHeaders;
+
+  /// Per-request timeout applied to every GET / POST / multipart call.
+  /// On expiry the underlying Future throws a [TimeoutException]
+  /// (from `dart:async`), which implements [Exception] and is caught by
+  /// callers' regular error-handling paths.
+  final Duration timeout;
 
   /// Called whenever the server responds with 401 Unauthorized.
   /// Set this once (e.g. in your auth BLoC setup) to handle session expiry.
@@ -77,10 +84,12 @@ class SimpleApiClient {
       queryParameters: queryParameters,
     );
     _logRequest('GET', uri);
-    final response = await _httpClient.get(
-      uri,
-      headers: {..._defaultHeaders, ...?extraHeaders},
-    );
+    final response = await _httpClient
+        .get(
+          uri,
+          headers: {..._defaultHeaders, ...?extraHeaders},
+        )
+        .timeout(timeout);
     _logResponse(response);
     return _parse(response, fromData);
   }
@@ -96,11 +105,13 @@ class SimpleApiClient {
     final uri = Uri.parse('$_baseUrl$path');
     final encoded = jsonEncode(body);
     _logRequest('POST', uri, encoded);
-    final response = await _httpClient.post(
-      uri,
-      headers: {..._defaultHeaders, ...?extraHeaders},
-      body: encoded,
-    );
+    final response = await _httpClient
+        .post(
+          uri,
+          headers: {..._defaultHeaders, ...?extraHeaders},
+          body: encoded,
+        )
+        .timeout(timeout);
     _logResponse(response);
     return _parse(response, fromData);
   }
@@ -129,7 +140,7 @@ class SimpleApiClient {
       ..fields.addAll(fields)
       ..files.add(file);
 
-    final streamed = await _httpClient.send(request);
+    final streamed = await _httpClient.send(request).timeout(timeout);
     final response = await http.Response.fromStream(streamed);
     _logResponse(response);
     return _parse(response, fromData);
